@@ -29,6 +29,15 @@ def get_tonsilbe_edge_index(pos, distance_thres):
     edge_list = np.transpose(np.nonzero(dists_mask)).tolist()
     return edge_list
 
+def get_own_edge_index(pos, distance_thres):
+    # construct edge indexes in one region
+    edge_list = []
+    dists = pairwise_distances(pos)
+    dists_mask = dists < distance_thres
+    np.fill_diagonal(dists_mask, 0)
+    edge_list = np.transpose(np.nonzero(dists_mask)).tolist()
+    return edge_list
+
 def load_hubmap_data(labeled_file, unlabeled_file, distance_thres, sample_rate):
     train_df = pd.read_csv(labeled_file)
     test_df = pd.read_csv(unlabeled_file)
@@ -75,6 +84,17 @@ def load_tonsilbe_data(filename, distance_thres, sample_rate):
     labeled_edges = get_tonsilbe_edge_index(labeled_pos, distance_thres)
     unlabeled_edges = get_tonsilbe_edge_index(unlabeled_pos, distance_thres)
     return train_X, train_y, test_X, labeled_edges, unlabeled_edges, inverse_dict
+
+def load_own_data(train_df, test_df, distance_thres, sample_rate):
+    train_df = train_df.sample(n=round(sample_rate*len(train_df)), random_state=1)
+    train_X = train_df.iloc[:, 1:-4].values
+    test_X = test_df.iloc[:, 1:-4].values
+    train_y = train_df['cell_type'].values
+    labeled_pos = train_df.iloc[:, -4:-2].values
+    unlabeled_pos = test_df.iloc[:, -4:-2].values
+    labeled_edges = get_own_edge_index(labeled_pos, distance_thres)
+    unlabeled_edges = get_own_edge_index(unlabeled_pos, distance_thres)
+    return train_X, train_y, test_X, labeled_edges, unlabeled_edges
 
 class GraphDataset(InMemoryDataset):
 
